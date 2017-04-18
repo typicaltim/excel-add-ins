@@ -1,6 +1,7 @@
 Sub RegisterBalancer()
 
     'Variable Declarations
+        Dim vnull As Integer
     
     'Formatting the transaction data
     
@@ -29,6 +30,12 @@ Sub RegisterBalancer()
                         Case "Checking"
                         CellRangeRead.Offset(0, 3).Value = "Check"
                         
+                        Case "Corporate checking"
+                        CellRangeRead.Offset(0, 3).Value = "Check"
+                        
+                        Case "Discover"
+                        CellRangeRead.Offset(0, 3).Value = "Credit"
+                        
                         Case "Visa"
                         CellRangeRead.Offset(0, 3).Value = "Credit"
                         
@@ -38,11 +45,8 @@ Sub RegisterBalancer()
                         Case "American Express"
                         CellRangeRead.Offset(0, 3).Value = "Credit"
                         
-                        Case "Discover"
-                        CellRangeRead.Offset(0, 3).Value = "Check"
-                        
                         Case Else
-                        CellRangeRead.Offset(0, 3).Value = Null
+                        CellRangeRead.Offset(0, 3).Value = "Please Contact I.T."
                         
                     End Select
                     
@@ -66,39 +70,84 @@ Sub RegisterBalancer()
         'Organize transaction data into the pivot table
         
             'Add Transaction Type to the row field
-            Set objField = transactionPTable.PivotFields("Transaction Type")
-            objField.Orientation = xlRowField
+            Set objfield = transactionPTable.PivotFields("Transaction Type")
+                With objfield
+                    .Orientation = xlRowField
+                End With
             
             'Add Transaction Reference Number to the row field
-            Set objField = transactionPTable.PivotFields("Transaction Reference Number")
-            objField.Orientation = xlRowField
+            Set objfield = transactionPTable.PivotFields("Transaction Reference Number")
+                With objfield
+                    .Orientation = xlRowField
+                    'Enable multiple filters
+                    .EnableMultiplePageItems = True
+                    'Remove blank transaction reference numbers
+                    .PivotItems("(blank)").Visible = False
+                End With
             
             'Add Client User to the column field
-            Set objField = transactionPTable.PivotFields("Client User")
-            objField.Orientation = xlColumnField
+            Set objfield = transactionPTable.PivotFields("Client User")
+                With objfield
+                    .Orientation = xlColumnField
+                End With
             
             'Add Amount the the data field
-            Set objField = transactionPTable.PivotFields("Amount")
-            objField.Orientation = xlDataField
-                'Sum the total of this data
-                objField.Function = xlSum
-                'Format the values so that it matches US currency notation
-                objField.NumberFormat = "$ #,##0.00"
-    
-    'Filter the pivot table to make it easier on users to identify the content they are concerned about
-        
+            Set objfield = transactionPTable.PivotFields("Amount")
+                With objfield
+                    .Orientation = xlDataField
+                    'Sum the total of this data
+                    .Function = xlSum
+                    'Format the values so that it matches US currency notation
+                    .NumberFormat = "$ #,##0.00"
+                End With
+            
+            'TODO
+            '   Figure out a way to _try_ to hide actions to suppress errors.
+            
+            'Add Applications to the filter field, and hide cancelled transactions
+            Set objfield = transactionPTable.PivotFields("Applications")
+                With objfield
+                    .Orientation = xlPageField
+                    .CurrentPage = "(All)"
+                    'Enable multiple filters
+                    .EnableMultiplePageItems = True
+                    'Remove voided/rejected/declined transactions
+                    .PivotItems("Credit Card Authorization(Reject),Credit Card Settlement(Ignore)").Visible = False
+                    .PivotItems("Credit Card Settlement(Ignore),Credit Card Authorization(Reject)").Visible = False
+                End With
+
+    'Filter the pivot table by username to make it easier on users to identify the content they are concerned about
+
+        ' \\ METHOD 1: USER ENTERS NAME PRIOR TO FILTERING \\
         'Set variable as string
         Dim myUserName As String
-        'Use environment variable to determine logged in user
-        myUserName = Environ$("UserName")
-        
-        'For every Client User, check if it matches the logged on user and hide it if it doesn't - that way only the current user's transactions are listed
+        'Ask user to input their username
+        myUserName = Application.InputBox(Title:="User Name Verification", prompt:="Please Enter User Name", Type:=2)
+        'For every Client User, check if it matches the input usename and hide it if it doesn't - that way only the input user's transactions are listed
         For Each pvtItem In ActiveSheet.PivotTables("transactionPTable").PivotFields("Client User").PivotItems
-            If pvtItem.Name = myUserName Then
-                pvtItem.Visible = True
-            Else
-                pvtItem.Visible = False
-            End If
-            Next pvtItem
+        If pvtItem.Name = myUserName Then
+               pvtItem.Visible = True
+           Else
+               pvtItem.Visible = False
+        End If
+        Next pvtItem
+        
+        ' \\ METHOD 2: SYSTEM VARIABLE IS CALLED FOR AUTOMATIC FILTERING \\
+        '           This sh*t doesn't f**king work. Don't bother.
+
+        '        'Set variable as string
+        '        Dim myUserName As String
+        '        'Use environment variable to determine logged in user
+        '        myUserName = Environ$("UserName")
+        '        myUserName = (StrConv(Var, VbStrConv.vbLowerCase))
+        
+        '        'For every Client User, check if it matches the logged on user and hide it if it doesn't - that way only the current user's transactions are listed
+        '            For Each pvtItem In ActiveSheet.PivotTables("transactionPTable").PivotFields("Client User").PivotItems
+        '            If pvtItem.Name = myUserName Then
+        '                    pvtItem.Visible = True
+        '                Else
+        '                    pvtItem.Visible = False
+        '            End If
+        '            Next pvtItem
 
 End Sub
