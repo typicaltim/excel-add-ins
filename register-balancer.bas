@@ -1,4 +1,4 @@
-Sub RegisterBalancer()
+Sub RegisterBalancerDEV()
 
     'Variable Declarations
         Dim vnull As Integer
@@ -81,8 +81,15 @@ Sub RegisterBalancer()
                     .Orientation = xlRowField
                     'Enable multiple filters
                     .EnableMultiplePageItems = True
-                    'Remove blank transaction reference numbers
-                    .PivotItems("(blank)").Visible = False
+                    
+                    'If an error is encountered, ignore it and keep going
+                    '       Not sure if this is a respectable way to handle this sort of situation, but I'm doing it this way for now.
+                    On Error Resume Next
+                        'Remove blank transaction reference numbers
+                        .PivotItems("(blank)").Visible = False
+                    'Reset error handling, please complain if something bad happens
+                    On Error GoTo 0
+                    
                 End With
             
             'Add Client User to the column field
@@ -111,9 +118,16 @@ Sub RegisterBalancer()
                     .CurrentPage = "(All)"
                     'Enable multiple filters
                     .EnableMultiplePageItems = True
-                    'Remove voided/rejected/declined transactions
-                    .PivotItems("Credit Card Authorization(Reject),Credit Card Settlement(Ignore)").Visible = False
-                    .PivotItems("Credit Card Settlement(Ignore),Credit Card Authorization(Reject)").Visible = False
+                    
+                    'If an error is encountered, ignore it and keep going
+                    '       Not sure if this is a respectable way to handle this sort of situation, but I'm doing it this way for now.
+                    On Error Resume Next
+                        'Remove voided/rejected/declined transactions
+                        .PivotItems("Credit Card Authorization(Reject),Credit Card Settlement(Ignore)").Visible = False
+                        .PivotItems("Credit Card Settlement(Ignore),Credit Card Authorization(Reject)").Visible = False
+                    'Reset error handling, please complain if something bad happens
+                    On Error GoTo 0
+                    
                 End With
 
     'Filter the pivot table by username to make it easier on users to identify the content they are concerned about
@@ -124,13 +138,23 @@ Sub RegisterBalancer()
         'Ask user to input their username
         myUserName = Application.InputBox(Title:="User Name Verification", prompt:="Please Enter User Name", Type:=2)
         'For every Client User, check if it matches the input usename and hide it if it doesn't - that way only the input user's transactions are listed
+        
+        Dim arr() As Variant
+        
         For Each pvtItem In ActiveSheet.PivotTables("transactionPTable").PivotFields("Client User").PivotItems
-        If pvtItem.Name = myUserName Then
-               pvtItem.Visible = True
-           Else
-               pvtItem.Visible = False
-        End If
+            arr(UBound(arr)) = pvtItem.Name
+            ReDim Preserve arr(1 To UBound(arr) + 1) As Variant
         Next pvtItem
+        
+            If IsInArray(myUserName, arr) Then
+                For Each pvtItem In ActiveSheet.PivotTables("transactionPTable").PivotFields("Client User").PivotItems
+                    pvtItem.Visible = False
+                Next pvtItem
+                ActiveSheet.PivotTables("transactionPTable").PivotFields("Client User").PivotItems.pvtItem(myUserName).Visible = True
+            Else
+                MsgBox (myUserName + " does not exist in this pivot table. Please enter a valid user name.")
+            End If
+        
         
         ' \\ METHOD 2: SYSTEM VARIABLE IS CALLED FOR AUTOMATIC FILTERING \\
         '           This sh*t doesn't f**king work. Don't bother.
@@ -151,3 +175,7 @@ Sub RegisterBalancer()
         '            Next pvtItem
 
 End Sub
+
+Function IsInArray(stringToBeFound As String, arr As Variant) As Boolean
+  IsInArray = (UBound(Filter(arr, stringToBeFound)) > -1)
+End Function
