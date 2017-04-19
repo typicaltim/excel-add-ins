@@ -108,9 +108,6 @@ Sub RegisterBalancerDEV()
                     .NumberFormat = "$ #,##0.00"
                 End With
             
-            'TODO
-            '   Figure out a way to _try_ to hide actions to suppress errors.
-            
             'Add Applications to the filter field, and hide cancelled transactions
             Set objfield = transactionPTable.PivotFields("Applications")
                 With objfield
