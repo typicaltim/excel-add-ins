@@ -81,8 +81,15 @@ Sub RegisterBalancer()
                     .Orientation = xlRowField
                     'Enable multiple filters
                     .EnableMultiplePageItems = True
-                    'Remove blank transaction reference numbers
-                    .PivotItems("(blank)").Visible = False
+                    
+                    'If an error is encountered, ignore it and keep going
+                    '       Not sure if this is a respectable way to handle this sort of situation, but I'm doing it this way for now.
+                    On Error Resume Next
+                        'Remove blank transaction reference numbers
+                        .PivotItems("(blank)").Visible = False
+                    'Reset error handling, please complain if something bad happens
+                    On Error GoTo 0
+                    
                 End With
             
             'Add Client User to the column field
@@ -101,9 +108,6 @@ Sub RegisterBalancer()
                     .NumberFormat = "$ #,##0.00"
                 End With
             
-            'TODO
-            '   Figure out a way to _try_ to hide actions to suppress errors.
-            
             'Add Applications to the filter field, and hide cancelled transactions
             Set objfield = transactionPTable.PivotFields("Applications")
                 With objfield
@@ -111,9 +115,16 @@ Sub RegisterBalancer()
                     .CurrentPage = "(All)"
                     'Enable multiple filters
                     .EnableMultiplePageItems = True
-                    'Remove voided/rejected/declined transactions
-                    .PivotItems("Credit Card Authorization(Reject),Credit Card Settlement(Ignore)").Visible = False
-                    .PivotItems("Credit Card Settlement(Ignore),Credit Card Authorization(Reject)").Visible = False
+                    
+                    'If an error is encountered, ignore it and keep going
+                    '       Not sure if this is a respectable way to handle this sort of situation, but I'm doing it this way for now.
+                    On Error Resume Next
+                        'Remove voided/rejected/declined transactions
+                        .PivotItems("Credit Card Authorization(Reject),Credit Card Settlement(Ignore)").Visible = False
+                        .PivotItems("Credit Card Settlement(Ignore),Credit Card Authorization(Reject)").Visible = False
+                    'Reset error handling, please complain if something bad happens
+                    On Error GoTo 0
+                    
                 End With
 
     'Filter the pivot table by username to make it easier on users to identify the content they are concerned about
